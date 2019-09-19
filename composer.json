@@ -1,0 +1,7 @@
+{
+    "require": {
+        "amphp/amp": "^2.2",
+        "amphp/process": "^1.1",
+        "phpactor/test-utils": "^1.0"
+    }
+}
