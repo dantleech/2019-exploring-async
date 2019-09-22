@@ -28,7 +28,7 @@ class Runner
 
             \Amp\call(function () use ($repoUrl, $scripts, $workspace) {
                 $repoPath = $workspace->path(basename($repoUrl));
-                $exitCode = yield from $this->runCommand(sprintf('git clone %s %s', $repoUrl, $repoPath));
+                $exitCode = yield from $this->runCommand(sprintf('git clone %s %s', $repoUrl, $repoPath), getcwd());
                 foreach ($scripts as $script) {
                     $exitCode = yield from $this->runCommand($script, $repoPath);
                 }
