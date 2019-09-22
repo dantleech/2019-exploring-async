@@ -14,78 +14,47 @@ class Runner
      */
     private $scripts;
 
-    /**
-     * @var Workspace
-     */
-    private $workspace;
-
     public function __construct(array $scripts)
     {
         $this->scripts = $scripts;
-        $this->workspace = Workspace::create(__DIR__ . '/../Workspace');
     }
 
     public function run()
     {
-        $this->workspace->reset();
-        $promises = [];
+        $workspace = new Workspace(__DIR__ . '/../Workspace');
+        $workspace->reset();
 
-        foreach ($this->scripts as $repoUrl => $commands) {
+        foreach ($this->scripts as $repoUrl => $scripts) {
 
-            $promises[] = \Amp\call(function () use ($repoUrl, $commands) {
-                $exitCode = 0;
-                $repoName = basename($repoUrl);
-                $repoPat = $this->workspace->path($repoName);
-
-                yield $this->runCommand(sprintf(
-                    'git clone %s %s',
-                    $repoUrl,
-                    $repoPat
-                ), '/tmp');
-
-                foreach ($commands as $command) {
-                    $exitCode += yield $this->runCommand($command, $repoPat);
+            \Amp\call(function () use ($repoUrl, $scripts, $workspace) {
+                $repoPath = $workspace->path(basename($repoUrl));
+                $exitCode = yield from $this->runCommand(sprintf('git clone %s %s', $repoUrl, $repoPath));
+                foreach ($scripts as $script) {
+                    $exitCode = yield from $this->runCommand($script, $repoPath);
                 }
-
-                return $exitCode;
             });
-        }
 
-        return $promises;
+        }
     }
 
-    private function runCommand(string $command, string $path): Promise
+    private function runCommand(string $command, $cwd): Generator
     {
-        return \Amp\call(function () use ($command, $path) {
-            echo 'Running ' . $command . PHP_EOL;
-            $process = new Process($command, $path);
-            $pid = yield $process->start();
-
-            $process->getStdout()->read()->onResolve(function ($failure, $value) {
-                echo $value;
-            });
-            $process->getStderr()->read()->onResolve(function ($failure, $value) {
-                echo $value;
-            });
-
-            return yield $process->join();
-        });
-
+        $process = new Process($command, $cwd);
+        $pid = yield $process->start();
+        return yield $process->join();
     }
 }
 
 $runner = new Runner([
     'git@github.com:dantleech/fink' => [
         'composer install',
-        './vendor/bin/phpunit'
+        './vendor/bin/phpunit',
     ],
-    'git@github.com:phpbench/container' => [
+    'git@github.com:phpactor/container' => [
         'composer install',
-        './vendor/bin/phpunit'
-    ]
-]);;
-
-$resuts = \Amp\Promise\wait(\Amp\Promise\all($runner->run()));
-var_dump($resuts);
+        './vendor/bin/phpunit',
+    ],
+]);
+$runner->run();
 
 Loop::run();

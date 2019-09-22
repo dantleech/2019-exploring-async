@@ -11,6 +11,8 @@ $except = null;
 
 $read = [ $stream ];
 
+
 stream_select($read, $write, $except, null);
 
 echo stream_get_contents($read[0]);
+

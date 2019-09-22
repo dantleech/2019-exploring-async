@@ -1,8 +1,8 @@
 <?php
 
 $stream1 = stream_socket_client('tcp://localhost:8080');
-fwrite($stream1, "GET /?sleep=1 HTTP/1.0\r\n\r\n");
 stream_set_blocking($stream1, false);
+fwrite($stream1, "GET /?sleep=1 HTTP/1.0\r\n\r\n");
 
 $stream2 = stream_socket_client('tcp://localhost:8080');
 stream_set_blocking($stream2, false);
